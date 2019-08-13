@@ -2,7 +2,7 @@
 import sys
 
 
-def borders(pat):
+def borders_bf(pat):
     m = len(pat)
     b = []
     for j in range(0,m+1):
@@ -11,6 +11,28 @@ def borders(pat):
             k -= 1
         b.append(k)
     return b
+
+
+def borders(pat) :
+    print("computing borders")
+    m = len(pat)
+    b = (m+1) * [0]
+    b[0] = -1
+    i = 1
+    j = 0
+    while i < m:
+        print("i=%d"%i)
+        while j < m and i+j<m and pat[i+j] == pat[j]:
+            j += 1
+            print(pat)
+            print("%s%s"%(" "*i,j*"="))
+            print("%s%s"%(" "*i,pat))
+            b[i+j] = j
+            print(b)
+        i += max(1, j-b[j])
+        j = max(0, b[j])
+    return b
+
 
 
 def kmp(txt, pat, b=None) :
@@ -48,9 +70,10 @@ def main() :
 
 def amain():
     txt = "abracadabra"
-    pat = "abra"
-    occ = kmp(txt,pat)
-    print(occ)
+    pat = "abracadabra"
+    brd = borders(pat)
+    print(brd)
+
 
 
 
