@@ -1,5 +1,26 @@
 import sys
 
+def borders(pat) :
+    #print("computing borders")
+    m = len(pat)
+    b = (m+1) * [0]
+    b[0] = -1
+    i = 1
+    j = 0
+    while i < m:
+        #print("i=%d"%i)
+        while j < m and i+j<m and pat[i+j] == pat[j]:
+            j += 1
+            #print(pat)
+            #print("%s%s"%(" "*i,j*"="))
+            #print("%s%s"%(" "*i,pat))
+            b[i+j] = j
+            #print(b)
+        i += max(1, j-b[j])
+        j = max(0, b[j])
+    return b
+
+
 
 def badchar(pat):
     bc = 128*[-1]
@@ -10,18 +31,19 @@ def badchar(pat):
 
 def goodsuffix(pat):
     m = len(pat)
-    gs = m*[0]
+    b = borders(pat)
+    gs = m*[b[m]]
     for j in range(0,m):
         U = pat[j+1:]
         lenU = m-1-j
         k = m-1
-        while k>0:
+        while k>b[m]:
             if k>lenU and U==pat[k-lenU:k]:
                 gs[j] = k
                 break
-            elif k<=lenU and pat[:k]==pat[m-k:]:
-                gs[j] = k
-                break
+            #elif k<=lenU and pat[:k]==pat[m-k:]:
+            #    gs[j] = k
+            #    break
             k -= 1
     return gs    
 
