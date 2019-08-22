@@ -29,7 +29,7 @@ def badchar(pat):
     return bc
 
 
-def goodsuffix(pat):
+def goodsuffix_old(pat):
     m = len(pat)
     b = borders(pat)
     gs = m*[b[m]]
@@ -47,6 +47,19 @@ def goodsuffix(pat):
             k -= 1
     return gs    
 
+
+def goodsuffix(pat):
+    m = len(pat)
+    Pi = borders(pat)
+    PiR = borders(pat[::-1])
+    gs = m*[m-Pi[m]]
+    for l in range(1,m+1):
+        j = m-1-PiR[l]
+        if l-PiR[l] < gs[j]:
+            gs[j] = l-PiR[l]
+    return gs
+
+
 def bm(txt, pat, gs=None, bc=None) :
     n = len(txt)
     m = len(pat)
@@ -55,19 +68,13 @@ def bm(txt, pat, gs=None, bc=None) :
     i = 0
     occ = []
     while i <= n-m:
-        j = 0
-        while j<m and txt[i+m-1-j] == pat[m-1-j]:
-            j += 1
-        if j==m:
+        j = m-1
+        while j>=0 and txt[i+j] == pat[j]:
+            j -= 1
+        if j<0:
             occ.append(i)
-            s = 1
-        else:
-            d = gs[m-1-j]
-            l = bc[ord(txt[i+m-1-j])]
-            s = max(1, m-d, m-j-1-l)
-        i += s
+        i += max(j-bc[ord(txt[i+j])] if j>=0 else 1, gs[j])
     return occ
-
 
 
 def main() :
@@ -82,15 +89,15 @@ def main() :
         if occ:
             print(txt)
             print(occ)
-        count += len(occ)
+        count += 1 if occ else 0 #len(occ)
     txtfile.close()
     print("Total occurrences:",count)
 
 def amain():
     txt = "abracadabra"
-    pat = "abra"
-    occ = bm(txt, pat)
-    print(occ)
+    pat = "abracadabra"
+    gs = good_suffix(pat)
+    print(gs)
 
 
 
