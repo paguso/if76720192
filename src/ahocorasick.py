@@ -49,7 +49,7 @@ def compute_labels(goto, ab):
     print(labels)
     return labels
 
-def build_fail(pat_set, labels):
+def build_fail_old(pat_set, labels):
     fail = len(labels)*[0]
     for s in range(len(labels)):
         lbl = labels[s]
@@ -67,15 +67,65 @@ def build_fail(pat_set, labels):
 
 
 
+def build_fail(goto, ab, occ):
+    queue = []
+    queue.append(0)
+    fail = len(goto) * [0]
+    while(queue):
+        s = queue.pop(0)
+        print("popped",s)
+        for a in range(len(ab)):
+            if goto[s][a] != None and goto[s][a]>0:
+                t = goto[s][a]
+                if s == 0:
+                    fail[t] = 0
+                else:
+                    print("     succ following ", ab[a], "is ", t)
+                    p = fail[s]
+                    print("     trying p= ", p)
+                    while goto[p][a] == None:
+                        p = fail[p]
+                        print("     trying p= ", p)
+                    fail[t] = goto[p][a]
+                    print("fail=", fail)
+                occ[t].extend(occ[fail[t]])
+                queue.append(t)
+    return fail
+
+
+
+
+
+
+
+def scan(txt, pat_set, ab, goto, occ, fail):
+    n = len(txt)
+    cur = 0
+    for i in range(n):
+        #print("position ",i)
+        c = ab.index(txt[i])
+        while goto[cur][c]==None:
+            cur = fail[cur]
+            #print ("cur=", cur)
+        cur = goto[cur][c]
+        for p in occ[cur]:
+            print ("found ",pat_set[p], "at position", i-len(pat_set[p])+1)
+
+
 
 def main():
-    ab = "ehirs"
-    pat_set = ["he", "she", "his", "hers"]
+    txt = "she sells sea shells at the sea shore to his custormers and said vishe"
+    ab = sorted(set(list(txt))) 
+    pat_set = ["he", "she", "his", "hers", "vishe"]
     goto, occ = build_goto(pat_set, ab)
     print_goto(goto,ab )
     print_occ(occ)
     labels = compute_labels(goto, ab)    
-    build_fail(pat_set, labels)
+    fail = build_fail(goto, ab, occ)
+    print("fail",fail)
+    print("txt=",txt)
+    scan(txt, pat_set, ab, goto, occ, fail)
+
 
 
 if __name__ == '__main__':
