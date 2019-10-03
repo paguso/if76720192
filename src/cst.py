@@ -7,6 +7,7 @@ class Node(object):
         self.end = end
         self.chd = {}
         self.id = node_count
+        self.slink = None
         node_count += 1
 
     def is_leaf(self):
@@ -41,49 +42,60 @@ def find_locus(root, lbl, txt_len):
             return (cur,(nxt.start, nxt.start+(m-j)))
     return (cur,(0,0))
 
-# testa se no implicito v tem c-transicao.
-# caso nao tenha, cria uma
-# se for necessario, torna-o explicito
+# testa se no implicito v tem c-transicao
+# input: v=(u,(l,r)) vert canonico da fronteira.
+# output: is_term = booleano se v eh terminador i.e. tem c-trans
+#         w = forma explicita de v se nao for terminador
 def test_and_split(v, c, i, txt):
     (u,(l,r)) = v
     if l==r: # no explicito
-        if c not in u.chd:
-            u.chd[c] = Node(i, float('inf'))
+        return (c in u.chd, v)
     else: 
-        if txt[r] != c:
-            w = u.chd[txt[l]]
-            w.start = r
-            new_v = Node(l,r)
-            new_v.chd[txt[r]] = w
-            u.chd[txt[l]] = new_v
-            new_v.chd[c] = Node(i, float('inf'))
-
+        w = u.chd[txt[l]]
+        a = txt[w.start+(r-l)]
+        if a != c:
+            x = Node(l,r)
+            x.chd[a] = w
+            u[txt[l]] = x
+            w.start += (r-l)
+            return (False,(x,(0,0)))
+        else:
+            true (True, v)
+        
 
 
 # acrescentar o caractere txt[i] aa CST
-def update(grnd, root, txt, i):
+# input: vertice ativo canonico de Ti
+# output: vertice terminador de Ti
+
+def update((u,(l,r)), txt, i):
     c = txt[i]
-    for s in range(i+1):
-        (u,(l,r)) = find_locus(root, txt[s:i], i)
-        print("locus of %s is (%d,(%d,%s))"%(txt[s:i], u.id, l, str(r)))
-        if u.is_leaf():
-            pass
-        else:
-            test_and_split((u,(l,r)), c, i, txt)
+    (is_term, (v,(s,t))) = test_and_split((u,(l,r)))
+    while not is_term:
+        v.chd[c] = Node(i,float('inf'))
 
 
 def build_cst(txt, ab):
     n = len(txt)
     grnd = Node()
     root = Node(0,0)
+    root.slink = grnd
     for c in ab:
         grnd.chd[c] = root
+    leaf = Node(0,float('inf'))
+    root.chd[txt[0]] = leaf
     print("T0:")
     print_cst(root, ab, txt, 0)
-    for i in range(n):
+    (u,(l,r)) = (root, (0,0))
+    for i in range(1,n):
         # add txt[i] to T_i-1
-        update(grnd, root, txt, i)
+        # (u,(l,r)) eh o vert ativo canonico de Ti
+        (u,(l,r)) = update((u,(l,r)), txt, i)
+        # Ti+1 esta pronta e
+        # (u,(l,r)) eh o vert terminador de Ti
         print("T%d"%(i+1))
+        (u,(l,r)) = canonise((u,(l,r)))
+        # (u,(l,r)) eh o vert ativo canonico de Ti+1
         print_cst(root, ab, txt, i+1)
 
 
