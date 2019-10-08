@@ -129,12 +129,15 @@ def build_cst(txt, ab):
         # (u,(l,r)) eh o vert ativo canonico de Ti+1
         print("T%d"%(i+1))
         print_cst(root, ab, txt, i+1)
+    return root
 
 
 def main():
     txt = "senselessness"
     ab = "elns"
-    build_cst(txt, ab)
+    root = build_cst(txt, ab)
+    (u,(l,r)) = find_locus(root, "sense", len(txt))
+    print ("(%d,(%d,%d)=%s)"%(u.id,l,r,txt[l:r]))
 
 if __name__ == "__main__":
     main()
