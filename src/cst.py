@@ -14,7 +14,7 @@ class Node(object):
         return self.end==float('inf')
 
 def _print_cst(root, level, ab, txt, txt_len):
-    print("%s[id=%d in_edge=%s]"%(level*"  ", root.id, txt[root.start:min(root.end, txt_len)] ))
+    print("%s[id=%d in_edge=%s slink=%s]"%(level*"  ", root.id, txt[root.start:min(root.end, txt_len)] , str(root.slink.id) if root.slink else "?"))
     for c in ab:
         if c in root.chd:
             _print_cst(root.chd[c], level+1, ab, txt, txt_len)
@@ -46,8 +46,9 @@ def find_locus(root, lbl, txt_len):
 # input: v=(u,(l,r)) vert canonico da fronteira.
 # output: is_term = booleano se v eh terminador i.e. tem c-trans
 #         w = forma explicita de v se nao for terminador
-def test_and_split(v, c, i, txt):
+def test_and_split(v, c, txt):
     (u,(l,r)) = v
+    print("test&split node (%d, (%d,%d)=%s)"%(u.id, l,r, txt[l:r]))
     if l==r: # no explicito
         return (c in u.chd, v)
     else: 
@@ -56,12 +57,30 @@ def test_and_split(v, c, i, txt):
         if a != c:
             x = Node(l,r)
             x.chd[a] = w
-            u[txt[l]] = x
+            u.chd[txt[l]] = x
             w.start += (r-l)
             return (False,(x,(0,0)))
         else:
-            true (True, v)
+            return (True, v)
         
+# input: no implicito
+# output: no na forma canonica
+def canonise((u,(l,r)), txt):
+    print("canonising (%d, (%d,%d)=%s)"%(u.id, l,r, txt[l:r]))
+    while r>l:
+        v = u.chd[txt[l]]
+        if v.is_leaf():
+            break
+        else: 
+            v_edge_len = v.end - v.start
+            #print("v_edge_len=%d"%v_edge_len)
+            if v_edge_len <= (r-l):
+                u = v
+                l += v_edge_len
+            else:
+                break
+    print("return canonical (%d, (%d,%d)=%s)"%(u.id, l,r, txt[l:r]))
+    return (u,(l,r))
 
 
 # acrescentar o caractere txt[i] aa CST
@@ -69,39 +88,52 @@ def test_and_split(v, c, i, txt):
 # output: vertice terminador de Ti
 
 def update((u,(l,r)), txt, i):
+    print("updating from active node (%d, (%d,%d)=%s)"%(u.id, l,r, txt[l:r]))
     c = txt[i]
-    (is_term, (v,(s,t))) = test_and_split((u,(l,r)))
+    (is_term, (v,(s,t))) = test_and_split((u,(l,r)), txt[i], txt )
+    v_prev = None
     while not is_term:
+        print("... is not terminator. add new leaf")
         v.chd[c] = Node(i,float('inf'))
+        if v_prev:
+            v_prev.slink = v
+        v_prev = v
+        (u,(l,r)) = canonise((u.slink,(l,r)), txt ) 
+        (is_term, (v,(s,t))) = test_and_split((u,(l,r)), txt[i], txt)
+    if v_prev and (s==t):
+        v_prev.slink = v
+    print("return terminator (%d, (%d,%d)=%s)"%(v.id, s,t, txt[s:t]))
+    return (v,(s,t))
 
 
 def build_cst(txt, ab):
     n = len(txt)
-    grnd = Node()
-    root = Node(0,0)
+    grnd = Node(-1,-1)
+    root = Node(-1,0)
     root.slink = grnd
     for c in ab:
         grnd.chd[c] = root
     leaf = Node(0,float('inf'))
     root.chd[txt[0]] = leaf
     print("T0:")
-    print_cst(root, ab, txt, 0)
-    (u,(l,r)) = (root, (0,0))
+    print_cst(root, ab, txt, 1)
+    (u,(l,r)) = (root, (1,1))
     for i in range(1,n):
+        print("\n\n%d: adding %c"%(i,txt[i]))
         # add txt[i] to T_i-1
         # (u,(l,r)) eh o vert ativo canonico de Ti
         (u,(l,r)) = update((u,(l,r)), txt, i)
         # Ti+1 esta pronta e
         # (u,(l,r)) eh o vert terminador de Ti
-        print("T%d"%(i+1))
-        (u,(l,r)) = canonise((u,(l,r)))
+        (u,(l,r)) = canonise((u,(l,i+1)), txt)
         # (u,(l,r)) eh o vert ativo canonico de Ti+1
+        print("T%d"%(i+1))
         print_cst(root, ab, txt, i+1)
 
 
 def main():
-    txt = "ababc"
-    ab = "abc"
+    txt = "senselessness"
+    ab = "elns"
     build_cst(txt, ab)
 
 if __name__ == "__main__":
