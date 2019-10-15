@@ -13,6 +13,11 @@ def cmpk(x,y,k):
     else:
         return +1
 
+def lcp(X,Y, start_at=0):
+    l = start_at
+    while l<len(X) and l<len(Y) and X[l]==Y[l]:
+        l += 1
+    return l
 
 def pred(txt, pat, sa):
     n = len(txt)
@@ -33,7 +38,7 @@ def pred(txt, pat, sa):
         return l
 
 
-def succ(txt, pat, sa):
+def succ_old(txt, pat, sa):
     n = len(txt)
     m = len(pat)
     if cmpk(pat, txt[sa[0]:], m) <= 0:
@@ -49,6 +54,49 @@ def succ(txt, pat, sa):
                 r = h
             else:
                 l = h
+        return r
+
+
+
+def succ(txt, pat, sa):
+    n = len(txt)
+    m = len(pat)
+    Lp = n * [-1]
+    Rp = n * [-1]
+    Llcp = n * [-1]
+    Rlcp = n * [-1]
+    if cmpk(pat, txt[sa[0]:], m) <= 0:
+        return 0
+    elif cmpk(pat, txt[sa[n-1]:], m) > 0:
+        return n
+    # invariante txt[sa[l]:] < pat <= txt[sa[r]:]
+    else: 
+        l = 0
+        r = n-1
+        h = (l+r)/2
+        Lp[h] = lcp(pat, txt[sa[l]:])
+        Rp[h] = lcp(pat, txt[sa[r]:])
+        Llcp[h] = lcp(txt[sa[l]:], txt[sa[h]:], min(Lp[h],Rp[h]))
+        Rlcp[h] = lcp(txt[sa[h]:], txt[sa[r]:], min(Lp[h],Rp[h]))
+        while r-l > 1:
+            h = (l+r)/2
+            if Lp[h] > Rp[h]:
+                #caso 1
+                if Llcp[h] > Lp[h]:
+                    H = Lp[h]
+                #caso 2
+                elif  Llcp[h] == Lp[h]:
+                    H = Lp[h] + lcp(pat, txt[sa[h]:], Lp[h])
+                #caso 3
+                else:
+                    H = Llcp[h]
+            else: # Rp[h] >= Lp[h]
+                #caso 1
+                if Rlcp[h] > Rp[h]:
+                    H = Rlcp[h]
+                #caso 2
+                #caso 3
+
         return r
 
 
