@@ -57,14 +57,30 @@ def succ_old(txt, pat, sa):
         return r
 
 
+def fill_LRlcp(txt, sa, l, r, Llcp, Rlcp):
+    if r-l <= 1:
+        return 
+    h = (l+r)/2
+    Llcp[h] = lcp(txt[sa[l]:], txt[sa[h]:])
+    Rlcp[h] = lcp(txt[sa[h]:], txt[sa[r]:])
+    fill_LRlcp(txt, sa, l, h, Llcp, Rlcp)
+    fill_LRlcp(txt, sa, h, r, Llcp, Rlcp)
 
-def succ(txt, pat, sa):
+
+def compute_LRlcp(txt, sa):
+    n = len(txt)
+    Llcp = n*[0]
+    Rlcp = n*[0]
+    fill_LRlcp(txt, sa, 0, n-1, Llcp, Rlcp)
+    return Llcp, Rlcp
+
+
+
+
+def succ(txt, pat, sa, Llcp, Rlcp):
     n = len(txt)
     m = len(pat)
-    Lp = n * [-1]
-    Rp = n * [-1]
-    Llcp = n * [-1]
-    Rlcp = n * [-1]
+    L, R = 0,0
     if cmpk(pat, txt[sa[0]:], m) <= 0:
         return 0
     elif cmpk(pat, txt[sa[n-1]:], m) > 0:
@@ -74,29 +90,38 @@ def succ(txt, pat, sa):
         l = 0
         r = n-1
         h = (l+r)/2
-        Lp[h] = lcp(pat, txt[sa[l]:])
-        Rp[h] = lcp(pat, txt[sa[r]:])
-        Llcp[h] = lcp(txt[sa[l]:], txt[sa[h]:], min(Lp[h],Rp[h]))
-        Rlcp[h] = lcp(txt[sa[h]:], txt[sa[r]:], min(Lp[h],Rp[h]))
+        L = lcp(pat, txt[sa[l]:])
+        R = lcp(pat, txt[sa[r]:])
+        #Llcp[h] = lcp(txt[sa[l]:], txt[sa[h]:], min(L,R))
+        #Rlcp[h] = lcp(txt[sa[h]:], txt[sa[r]:], min(L,R))
         while r-l > 1:
             h = (l+r)/2
-            if Lp[h] > Rp[h]:
+            print("interval l=%d h=%d r=%d"%(l,h,r))
+            if L >= R:
                 #caso 1
-                if Llcp[h] > Lp[h]:
-                    H = Lp[h]
+                if L < Llcp[h]:
+                    H = L
                 #caso 2
-                elif  Llcp[h] == Lp[h]:
-                    H = Lp[h] + lcp(pat, txt[sa[h]:], Lp[h])
+                elif  L == Llcp[h]:
+                    H = lcp(pat, txt[sa[h]:], L)
                 #caso 3
                 else:
                     H = Llcp[h]
             else: # Rp[h] >= Lp[h]
                 #caso 1
-                if Rlcp[h] > Rp[h]:
-                    H = Rlcp[h]
+                if R < Rlcp[h]:
+                    H = R
                 #caso 2
+                elif R == Rlcp[h]:
+                    H = lcp(pat, txt[sa[h]:], R)
                 #caso 3
-
+                else:
+                    H = Rlcp[h]
+            print("H=lcp(pat=%s, T[%d:]=%s) = %d"%(pat, sa[h], txt[sa[h]:], H))
+            if H==m or (sa[h]+H<n and pat[H] <= txt[sa[h]+H]):
+                r,R = h,H
+            else:
+                l,L = h,H
         return r
 
 
@@ -118,12 +143,31 @@ def build_sarr(txt):
     return [y for (x,y) in suf]
 
 
+def print_sarr(txt, sa):
+    n = len(txt)
+    for i in range(n):
+        print ("SA[%d]=%d : %s"%(i,sa[i], txt[sa[i]:]))
+
+def print_RLlcp(txt, sa, Llcp, Rlcp, l, r):
+    if r-l <= 1:
+        return
+    h = (l+r)/2
+    print("Llcp[%d] = lcp(T[%d:]=%s, T[%d:]=%s) = %d"%(h, sa[l], txt[sa[l]:], sa[h], txt[sa[h]:], Llcp[h] ))
+    print("Rlcp[%d] = lcp(T[%d:]=%s, T[%d:]=%s) = %d"%(h, sa[h], txt[sa[h]:], sa[r], txt[sa[r]:], Rlcp[h] ))
+    print_RLlcp(txt, sa, Llcp, Rlcp, l, h)
+    print_RLlcp(txt, sa, Llcp, Rlcp, h, r)
+
+
 def main():
     txt = "senselessness"
     sa = build_sarr(txt)
+    print_sarr(txt, sa)
+    Llcp, Rlcp = compute_LRlcp(txt, sa)
+    #print_RLlcp(txt, sa, Llcp, Rlcp, 0, len(txt)-1)
     pat = "se"
-    occ = search(txt, pat)
-    print(occ)
+    so = succ_old(txt, pat, sa)
+    s =  succ(txt, pat, sa, Llcp, Rlcp)
+    assert s==so
 
 
 if __name__ == "__main__":
