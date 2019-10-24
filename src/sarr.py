@@ -136,7 +136,7 @@ def search(txt, pat, sa=None):
 
 
 
-def build_sarr(txt):
+def build_sarr_bf(txt):
     n = len(txt)
     suf = [(txt[i:],i) for i in range(n)]
     suf.sort()
@@ -158,16 +158,91 @@ def print_RLlcp(txt, sa, Llcp, Rlcp, l, r):
     print_RLlcp(txt, sa, Llcp, Rlcp, h, r)
 
 
+def sort_index(x):
+    n = len(x)
+    if n==0:
+        return []
+    pairs = zip(x, range(n))
+    pairs.sort()
+    ranks = n*[0]
+    r = 1
+    ranks[pairs[0][1]] = r
+    for i in range(1,n):
+        if pairs[i][0] != pairs[i-1][0]:
+            r += 1
+        ranks[pairs[i][1]] = r
+    return ranks
+    
+
+def build_P(txt):
+    n = len(txt)
+    P = []
+    P.append(sort_index(txt))
+    k = 0
+    twopowerk=1
+    while twopowerk < n:
+        pairs = [ (P[k][i], P[k][i+twopowerk] if i+twopowerk<n else 0)  for i in range(n) ]
+        P.append(sort_index(pairs))
+        k += 1
+        twopowerk *= 2
+    return P
+
+def invert_P(P):
+    n = len(P)
+    inv = n*[0]
+    for i in range(n):
+        inv[P[i]-1] = i
+    return inv
+
+def compute_lcp(P, i, j):
+    n = len(P[0])
+    k = len(P)-1
+    twopowerk = 1<<k
+    lcp = 0
+    while k>=0 and i<n and j<n:
+        if P[k][i] == P[k][j]:
+            lcp += twopowerk
+            i += twopowerk
+            j += twopowerk
+        k -= 1
+        twopowerk /= 2
+    return lcp
+
+def fill_LRlcp_P(txt, sa, P,l, r, Llcp, Rlcp):
+    if r-l <= 1:
+        return 
+    h = (l+r)/2
+    Llcp[h] = compute_lcp(P, sa[l], sa[h])
+    print("lcp(%s,%s)=%d"%(txt[sa[l]:], txt[sa[h]:], Llcp[h]))
+    Rlcp[h] = compute_lcp(P, sa[h], sa[r])
+    fill_LRlcp_P(txt, sa, P, l, h, Llcp, Rlcp)
+    fill_LRlcp_P(txt, sa, P, h, r, Llcp, Rlcp)
+
+
+
+def compute_LRlcp_P(txt, sa, P):
+    n = len(sa)
+    Llcp = n*[0]
+    Rlcp = n*[0]
+    fill_LRlcp_P(txt, sa,P, 0, n-1, Llcp, Rlcp)
+    return Llcp, Rlcp
+
+def build_sarr(txt):
+    P = build_P(txt)
+    for pi in P:
+        print(pi)
+    sa =  invert_P(P[-1])
+    Llcp, Rlcp = compute_LRlcp_P(txt, sa, P)
+    return sa, Llcp, Rlcp
+
+
 def main():
-    txt = "senselessness"
-    sa = build_sarr(txt)
-    print_sarr(txt, sa)
-    Llcp, Rlcp = compute_LRlcp(txt, sa)
-    #print_RLlcp(txt, sa, Llcp, Rlcp, 0, len(txt)-1)
-    pat = "se"
-    so = succ_old(txt, pat, sa)
-    s =  succ(txt, pat, sa, Llcp, Rlcp)
-    assert s==so
+    txt = "senselesssensess"
+    sa, Llcp, Rlcp = build_sarr(txt)
+    print(txt)
+    print(sa)
+    print(Llcp)
+    print(Rlcp)
 
 
 if __name__ == "__main__":
